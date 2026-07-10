@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button"
 import { useCart } from "@/components/cart-provider"
 import { formatPrice } from "@/lib/products"
 
+const INSTAGRAM_DM_URL = "https://ig.me/m/sorbo.sabores"
+
 export function CartPanel({
   open,
   onClose,
@@ -44,6 +46,12 @@ export function CartPanel({
       document.body.style.overflow = ""
     }
   }, [open, onClose])
+
+  const handleContinue = () => {
+    window.open(INSTAGRAM_DM_URL, "_blank", "noopener,noreferrer")
+    clear()
+    onClose()
+  }
 
   return (
     <div
@@ -173,11 +181,10 @@ export function CartPanel({
                 </span>
               </div>
               <Button
-                render={<a href="#" />}
-                nativeButton={false}
+                onClick={handleContinue}
                 className="h-11 w-full text-base"
               >
-                Continuar
+                Finalizar pedido por Instagram
                 <ArrowRight className="size-4" aria-hidden="true" />
               </Button>
               <button

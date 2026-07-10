@@ -38,6 +38,12 @@ export function ProductCard({ product }: { product: Product }) {
         </span>
       </div>
 
+      {product.descripcion && (
+        <p className="px-4 pb-3 text-sm leading-relaxed text-muted-foreground">
+          {product.descripcion}
+        </p>
+      )}
+
       <div className="mt-auto space-y-3 p-4 pt-0">
         <div className="rounded-lg bg-secondary/60 p-3">
           <div className="flex items-baseline justify-between gap-2">

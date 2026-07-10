@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { ShoppingCart } from "lucide-react"
 import { useCart } from "@/components/cart-provider"
 
@@ -10,9 +11,14 @@ export function SiteHeader({ onOpenCart }: { onOpenCart: () => void }) {
     <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
         <div className="flex items-center gap-2.5">
-          <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <span className="font-serif text-lg font-bold leading-none">S</span>
-          </span>
+          <Image
+            src="/logo.jpg"
+            alt="Sorbo Sabores"
+            width={36}
+            height={36}
+            priority
+            className="size-9 rounded-lg object-cover"
+          />
           <div className="leading-tight">
             <p className="font-bold tracking-tight">Sorbo Sabores</p>
             <p className="text-xs text-muted-foreground">Catálogo de blends</p>

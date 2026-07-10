@@ -9,8 +9,10 @@ import { ProductCard } from "@/components/product-card"
 import {
   fetchProducts,
   PRODUCTS_ENDPOINT,
+  recalculateProduct,
   type Product,
 } from "@/lib/products"
+import { COSTS_ENDPOINT, fetchCosts, type CostItem } from "@/lib/costs"
 
 export function ProductCatalog() {
   const { wholesale, setWholesale } = useCart()
@@ -22,9 +24,22 @@ export function ProductCatalog() {
     { revalidateOnFocus: false },
   )
 
+  const { data: costItems } = useSWR<CostItem[]>(COSTS_ENDPOINT, fetchCosts, {
+    revalidateOnFocus: false,
+  })
+
+  // El precio de venta se recalcula en el frontend sumando los CostItem que
+  // aplican por tipo (igual que el listado de la app principal). Mientras los
+  // costos no estén disponibles, se usa el producto tal cual llega del backend.
+  const products = useMemo(() => {
+    const list = data ?? []
+    if (!costItems || costItems.length === 0) return list
+    return list.map((p) => recalculateProduct(p, costItems))
+  }, [data, costItems])
+
   const inStock = useMemo(
-    () => (data ?? []).filter((p) => p.stock > 0),
-    [data],
+    () => products.filter((p) => p.stock > 0),
+    [products],
   )
 
   const filtered = useMemo(() => {
