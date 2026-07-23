@@ -171,3 +171,58 @@ Seguir estos pasos **en orden** para cualquier cambio no trivial:
     que el agente no ejecuta esos comandos.
   - Tablas de ejemplos cuando aplique (ej. casos de cálculo).
 - Dejar el PR abierto para revisión; no mergear salvo pedido explícito.
+
+### 5. Leer y responder comentarios de revisión
+
+Reemplazar `<n>` por el número de PR y `OWNER/REPO` por el repo
+(`Scerutti/web-listado-sorbo`).
+
+**Buscar los comentarios de revisión.** Un comentario inline puede estar en una
+revisión ya **enviada** o en una **pendiente** (`PENDING`, sin enviar). Los de
+una review pendiente NO aparecen en el listado normal de comentarios: hay que ir
+por el ID de la review. Revisar en este orden:
+
+1. Comentarios a nivel PR (issue comments) y estado general:
+   ```bash
+   gh pr view <n> --comments
+   ```
+2. Comentarios inline de revisiones **enviadas**:
+   ```bash
+   gh api repos/OWNER/REPO/pulls/<n>/comments \
+     --jq '.[] | {user: .user.login, path, line, body}'
+   ```
+3. Revisiones y su estado (para detectar las `PENDING`):
+   ```bash
+   gh api repos/OWNER/REPO/pulls/<n>/reviews \
+     --jq '.[] | {id, state, user: .user.login, body}'
+   ```
+4. Comentarios inline de una review **pendiente** (usar el `id` del paso 3):
+   ```bash
+   gh api repos/OWNER/REPO/pulls/<n>/reviews/<review_id>/comments \
+     --jq '.[] | {path, line, body}'
+   ```
+
+> Una review en estado `PENDING` la envía o descarta el desarrollador; el agente
+> no debe enviarla por él. El agente sí puede leer sus comentarios y aplicar los
+> cambios pedidos.
+
+**Cómo deja comentarios el agente.** El agente puede comentar (comandos `gh`,
+permitidos por la política):
+
+- Comentario a nivel PR (el más común, p. ej. para avisar que aplicó un cambio):
+  ```bash
+  gh pr comment <n> --body "Mensaje del comentario"
+  ```
+- Comentario inline en una línea de un archivo del diff (vía API), asociado al
+  último commit del PR (`commit_id`):
+  ```bash
+  gh api repos/OWNER/REPO/pulls/<n>/comments -X POST \
+    -f body="Comentario sobre esta línea" \
+    -f commit_id="<sha>" \
+    -f path="ruta/al/archivo" \
+    -F line=<número_de_línea> \
+    -f side="RIGHT"
+  ```
+
+Al resolver un comentario de revisión, dejar un comentario en el PR indicando
+qué se cambió (y en qué commit), en lugar de enviar la review del desarrollador.
