@@ -22,7 +22,9 @@ ni escritura hacia el backend.
 
 ## Comandos
 
-Ejecutar todo desde la raíz del proyecto.
+Estos comandos los ejecuta **el desarrollador**, no el agente (ver
+[Política de ejecución de comandos](#política-de-ejecución-de-comandos)).
+Correr todo desde la raíz del proyecto.
 
 - `pnpm install` — instalar dependencias.
 - `pnpm dev` — servidor de desarrollo (`next dev`, por defecto http://localhost:3000).
@@ -31,7 +33,22 @@ Ejecutar todo desde la raíz del proyecto.
 - `pnpm lint` — ESLint (`eslint .`).
 
 > No hay test runner configurado. La verificación de correctitud es el
-> **build/typecheck de TypeScript** (`pnpm build`) y `pnpm lint`.
+> **build/typecheck de TypeScript** (`pnpm build`) y `pnpm lint`, y la corre
+> el desarrollador.
+
+## Política de ejecución de comandos
+
+- **El agente / IA NO debe ejecutar comandos de proyecto** (`pnpm install`,
+  `pnpm dev`, `pnpm build`, `pnpm start`, `pnpm lint`, tests, etc.). La
+  validación con comandos `pnpm` la hace **el desarrollador**.
+- Los **únicos** comandos que el agente puede correr son los de control de
+  versiones y gestión de PRs:
+  - Crear y cambiar de ramas (`git checkout -b`, `git checkout`).
+  - Actualizar (`git pull`, `git fetch`).
+  - Commit y push (`git add`, `git commit`, `git push`).
+  - Crear y revisar Pull Requests (`gh pr create`, `gh pr view`, `gh pr review`, ...).
+- El agente implementa el cambio en el código; cuando necesita verificarlo,
+  **le pide al desarrollador** que corra el build/lint correspondiente.
 
 ## Arquitectura
 
@@ -117,7 +134,9 @@ Seguir estos pasos **en orden** para cualquier cambio no trivial:
 
 - Aplicar los cambios siguiendo las convenciones de arriba.
 - Mantener el cambio acotado al objetivo; no refactorizar de más.
-- Verificar antes de dar por hecho: `pnpm build` (o `pnpm lint`) sin errores.
+- El agente **no corre** `pnpm build`/`pnpm lint`: al terminar, le indica al
+  desarrollador qué comando conviene correr para validar (ver
+  [Política de ejecución de comandos](#política-de-ejecución-de-comandos)).
 
 ### 3. Rama, commit y push
 
@@ -148,6 +167,7 @@ Seguir estos pasos **en orden** para cualquier cambio no trivial:
   - **Qué cambia** y por qué.
   - **Cómo** se implementó (archivos/funciones clave).
   - **Alcance** (qué se ve afectado).
-  - **Verificación** (build/lint corrido).
+  - **Verificación**: qué debería validar el desarrollador (build/lint), ya
+    que el agente no ejecuta esos comandos.
   - Tablas de ejemplos cuando aplique (ej. casos de cálculo).
 - Dejar el PR abierto para revisión; no mergear salvo pedido explícito.
