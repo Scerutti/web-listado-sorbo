@@ -53,8 +53,18 @@ function round2(value: number): number {
 }
 
 /**
- * Precio de venta con costos incluidos:
- *   (precioCosto + costosAplicables) * (1 + porcentaje / 100)
+ * Redondea un monto al centenar más cercano.
+ * Analiza el resto de la división por 100: si es < 50 baja al múltiplo de 100
+ * inferior, si es >= 50 sube al superior. No muta el valor original.
+ *   2460 -> 2500 | 2230 -> 2200 | 2250 -> 2300 | 2149 -> 2100 | 2150 -> 2200
+ */
+export function roundToNearestHundred(value: number): number {
+  return Math.round(value / 100) * 100
+}
+
+/**
+ * Precio de venta con costos incluidos, redondeado al centenar más cercano:
+ *   round100( (precioCosto + costosAplicables) * (1 + porcentaje / 100) )
  */
 function calculateSalePrice(
   precioCosto: number,
@@ -62,7 +72,7 @@ function calculateSalePrice(
   porcentaje: number,
 ): number {
   const base = (precioCosto ?? 0) + costos
-  return round2(base * (1 + (porcentaje ?? 0) / 100))
+  return roundToNearestHundred(base * (1 + (porcentaje ?? 0) / 100))
 }
 
 /**
