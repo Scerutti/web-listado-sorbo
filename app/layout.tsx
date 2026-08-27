@@ -48,7 +48,7 @@ export default function RootLayout({
     <html lang="es" className={`${nunitoSans.variable} bg-background`}>
       <body className="font-sans antialiased">
         {children}
-        {process.env.NODE_ENV === 'production' && <Analytics />}
+        <Analytics />
       </body>
     </html>
   )
