@@ -1,20 +1,17 @@
+/**
+ * Producto tal como lo consume el catálogo. La respuesta del backend trae más
+ * campos (`tipoId`, `precioCosto`, `porcentajeGanancia`, `costos`, `soldCount`,
+ * timestamps); acá se declaran solo los que la UI usa, porque es una app de
+ * solo lectura y los precios llegan ya calculados.
+ */
 export interface Product {
   id: string
   nombre: string
   descripcion?: string
-  tipoId: string
   tipoNombre: string
-  precioCosto: number
-  porcentajeGanancia: number
-  porcentajeGananciaMayorista: number
-  /** Suma de los costos aplicables al producto, ya calculada por el backend. */
-  costos: number
   precioVenta: number
   precioVentaMayorista: number
   stock: number
-  soldCount: number
-  createdAt?: string
-  updatedAt?: string
 }
 
 export const PRODUCTS_ENDPOINT = "/api/products"

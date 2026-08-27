@@ -65,7 +65,7 @@ Correr todo desde la raíz del proyecto.
 - `lib/` — lógica de dominio y utilidades.
   - `products.ts` — tipo `Product`, fetch y **redondeo de precios**.
   - `utils.ts` — `cn()` (clsx + tailwind-merge).
-- `public/` — assets estáticos (logo, íconos, placeholders).
+- `public/` — assets estáticos (logo, íconos).
 - Alias de imports: **`@/*` → raíz del proyecto** (definido en `tsconfig.json`).
 
 ### Backend-for-frontend (BFF)
