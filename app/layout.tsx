@@ -12,7 +12,6 @@ const nunitoSans = Nunito_Sans({
 export const metadata: Metadata = {
   title: 'Sorbo Sabores — Catálogo',
   description: 'Catálogo de blends y sabores Sorbo disponibles en stock.',
-  generator: 'v0.app',
   icons: {
     icon: [
       {

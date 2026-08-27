@@ -1,56 +1,20 @@
+/**
+ * Producto tal como lo consume el catálogo. La respuesta del backend trae más
+ * campos (`tipoId`, `precioCosto`, `porcentajeGanancia`, `costos`, `soldCount`,
+ * timestamps); acá se declaran solo los que la UI usa, porque es una app de
+ * solo lectura y los precios llegan ya calculados.
+ */
 export interface Product {
   id: string
   nombre: string
   descripcion?: string
-  tipo: string
-  precioCosto: number
-  porcentajeGanancia: number
-  porcentajeGananciaMayorista: number
-  costos: string[]
+  tipoNombre: string
   precioVenta: number
   precioVentaMayorista: number
   stock: number
-  soldCount: number
-  createdAt?: string
-  updatedAt?: string
 }
-
-import type { CostItem } from "@/lib/costs"
 
 export const PRODUCTS_ENDPOINT = "/api/products"
-
-export async function fetchProducts(url: string): Promise<Product[]> {
-  const res = await fetch(url)
-  if (!res.ok) {
-    throw new Error(`Error ${res.status} al obtener los productos`)
-  }
-  const data = (await res.json()) as Product[]
-  return data
-}
-
-/**
- * Suma de los CostItem que aplican a un producto según su tipo.
- * Un costo aplica si es `general`, `amortizable` (aplican a todos) o si su
- * `tipo` coincide con el tipo del producto (blend/caja/gin). Replica
- * `calculateApplicableCosts` de la página principal (shared/functions.tsx).
- */
-export function calculateApplicableCosts(
-  costs: CostItem[],
-  tipoProducto: string,
-): number {
-  return costs
-    .filter(
-      (cost) =>
-        cost.tipo === "general" ||
-        cost.tipo === tipoProducto ||
-        cost.tipo === "amortizable",
-    )
-    .reduce((acc, cost) => acc + cost.valor, 0)
-}
-
-function round2(value: number): number {
-  return Math.round(value * 100) / 100
-}
 
 /**
  * Redondea un monto al centenar más cercano.
@@ -59,46 +23,34 @@ function round2(value: number): number {
  *   2460 -> 2500 | 2230 -> 2200 | 2250 -> 2300 | 2149 -> 2100 | 2150 -> 2200
  */
 export function roundToNearestHundred(value: number): number {
-  return Math.round(value / 100) * 100
+  return Math.round((value ?? 0) / 100) * 100
 }
 
 /**
- * Precio de venta con costos incluidos, redondeado al centenar más cercano:
- *   round100( (precioCosto + costosAplicables) * (1 + porcentaje / 100) )
+ * Normaliza un producto tal como llega de la API para mostrarlo en el listado.
+ *
+ * Los precios ya vienen calculados por el backend (`ProductsService` cruza los
+ * CostItem con los TiposCosto marcados como `aplicaATodos` y suma los del tipo
+ * propio del producto). Acá SOLO se redondea al centenar más cercano, que es la
+ * regla de presentación de este catálogo. El redondeo se aplica una única vez,
+ * en el fetch, para que la card y el carrito trabajen siempre con el mismo
+ * número y los totales coincidan.
  */
-function calculateSalePrice(
-  precioCosto: number,
-  costos: number,
-  porcentaje: number,
-): number {
-  const base = (precioCosto ?? 0) + costos
-  return roundToNearestHundred(base * (1 + (porcentaje ?? 0) / 100))
-}
-
-/**
- * Recalcula precioVenta y precioVentaMayorista de un producto cruzando los
- * CostItem por tipo, tal como lo hace el listado de la app principal
- * (recalculateProductFinancials). El precioVenta que trae el backend se
- * descarta a favor de este cálculo.
- */
-export function recalculateProduct(
-  product: Product,
-  costs: CostItem[],
-): Product {
-  const costos = calculateApplicableCosts(costs, product.tipo)
+function normalizeProduct(product: Product): Product {
   return {
     ...product,
-    precioVenta: calculateSalePrice(
-      product.precioCosto,
-      costos,
-      product.porcentajeGanancia,
-    ),
-    precioVentaMayorista: calculateSalePrice(
-      product.precioCosto,
-      costos,
-      product.porcentajeGananciaMayorista || 0,
-    ),
+    precioVenta: roundToNearestHundred(product.precioVenta),
+    precioVentaMayorista: roundToNearestHundred(product.precioVentaMayorista),
   }
+}
+
+export async function fetchProducts(url: string): Promise<Product[]> {
+  const res = await fetch(url)
+  if (!res.ok) {
+    throw new Error(`Error ${res.status} al obtener los productos`)
+  }
+  const data = (await res.json()) as Product[]
+  return data.map(normalizeProduct)
 }
 
 const currency = new Intl.NumberFormat("es-AR", {
