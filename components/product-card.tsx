@@ -23,7 +23,7 @@ export function ProductCard({ product }: { product: Product }) {
               {product.nombre}
             </h3>
             <p className="mt-0.5 text-xs capitalize text-muted-foreground">
-              {product.tipo}
+              {product.tipoNombre}
             </p>
           </div>
         </div>

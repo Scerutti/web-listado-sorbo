@@ -57,14 +57,13 @@ Correr todo desde la raíz del proyecto.
 - `app/` — App Router.
   - `app/layout.tsx` — layout raíz, metadata, fuente `Nunito_Sans`, `lang="es"`.
   - `app/page.tsx` — página única del catálogo (client component).
-  - `app/api/products/route.ts` y `app/api/costs/route.ts` — route handlers.
+  - `app/api/products/route.ts` — route handler (proxy al upstream).
   - `app/globals.css` — estilos globales y tokens de Tailwind.
 - `components/` — componentes de React.
   - `product-catalog.tsx`, `product-card.tsx`, `cart-provider.tsx`, `cart-panel.tsx`, `site-header.tsx`.
   - `components/ui/` — primitivas shadcn (`button.tsx`, ...).
 - `lib/` — lógica de dominio y utilidades.
-  - `products.ts` — tipo `Product`, fetch, y **cálculo de precios**.
-  - `costs.ts` — tipo `CostItem` y fetch de costos.
+  - `products.ts` — tipo `Product`, fetch y **redondeo de precios**.
   - `utils.ts` — `cn()` (clsx + tailwind-merge).
 - `public/` — assets estáticos (logo, íconos, placeholders).
 - Alias de imports: **`@/*` → raíz del proyecto** (definido en `tsconfig.json`).
@@ -74,11 +73,11 @@ Correr todo desde la raíz del proyecto.
 Los route handlers en `app/api/*` actúan como **proxy** hacia la API real y NO
 exponen el upstream al navegador:
 
-- Upstream: `https://api-sorbo.onrender.com/api/v1` (`/products`, `/costs`).
+- Upstream: `https://api-sorbo.onrender.com/api/v1` (`/products`).
 - Cachean con `revalidate = 60` (ISR, 60 s).
 - Ante fallo del upstream devuelven `502` con un mensaje en español.
-- El frontend siempre consume las rutas locales `/api/products` y `/api/costs`
-  (constantes `PRODUCTS_ENDPOINT` / `COSTS_ENDPOINT`), nunca el upstream directo.
+- El frontend siempre consume la ruta local `/api/products` (constante
+  `PRODUCTS_ENDPOINT`), nunca el upstream directo.
 
 ### Datos en el cliente
 
@@ -90,21 +89,26 @@ Patrón por recurso, replicarlo para cualquier feature nueva:
 
 ### Cálculo de precios (crítico)
 
-El `precioVenta` que llega del backend **se descarta**; el precio que ve el
-usuario se **recalcula en el frontend** (`lib/products.ts`):
+`precioVenta` y `precioVentaMayorista` los calcula **el backend** (cruza los
+`CostItem` con los `TiposCosto` marcados como `aplicaATodos` y suma los del tipo
+propio del producto) y llegan ya listos en la respuesta de `/products`. El
+frontend **no recalcula costos**: solo aplica el redondeo de presentación
+(`lib/products.ts`):
 
-- `calculateApplicableCosts(costs, tipoProducto)` — suma los `CostItem` cuyo
-  `tipo` es `general`, `amortizable` (aplican a todos) o coincide con el tipo
-  del producto (`blend` / `caja` / `gin`).
-- `calculateSalePrice(precioCosto, costos, porcentaje)` =
-  `roundToNearestHundred((precioCosto + costos) * (1 + porcentaje/100))`.
 - `roundToNearestHundred(value)` = `Math.round(value / 100) * 100` (redondeo al
   centenar más cercano: resto `< 50` baja, `>= 50` sube).
-- `recalculateProduct(product, costs)` produce `precioVenta` (usa
-  `porcentajeGanancia`) y `precioVentaMayorista` (usa `porcentajeGananciaMayorista`).
-- El redondeo vive **una sola vez en el origen** (`calculateSalePrice`) y se
-  propaga a card, carrito y totales. No redondear de nuevo en los renders.
+- `fetchProducts` normaliza cada producto redondeando `precioVenta` y
+  `precioVentaMayorista` al recibirlos.
+- El redondeo vive **una sola vez en el origen** (el fetch) y se propaga a card,
+  carrito y totales. No redondear de nuevo en los renders.
 - `formatPrice(value)` formatea en ARS sin decimales (`Intl.NumberFormat es-AR`).
+
+> No replicar el cálculo de costos en el cliente. Se hizo una vez y quedó
+> desincronizado cuando el backend pasó de tipos de costo fijos (`general`,
+> `blend`, ...) a `TiposCosto` dinámicos con `tipoId`: el filtro comparaba
+> campos inexistentes, `undefined === undefined` daba `true` y sumaba **todos**
+> los costos a **todos** los productos. La fuente de verdad de los precios es
+> el backend.
 
 El carrito (`cart-provider.tsx`) expone `unitPrice(product)` (elige mayorista o
 minorista según el toggle `wholesale`) y `totalPrice` (suma `unitPrice * quantity`).

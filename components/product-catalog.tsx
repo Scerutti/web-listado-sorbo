@@ -9,10 +9,8 @@ import { ProductCard } from "@/components/product-card"
 import {
   fetchProducts,
   PRODUCTS_ENDPOINT,
-  recalculateProduct,
   type Product,
 } from "@/lib/products"
-import { COSTS_ENDPOINT, fetchCosts, type CostItem } from "@/lib/costs"
 
 export function ProductCatalog() {
   const { wholesale, setWholesale } = useCart()
@@ -24,18 +22,9 @@ export function ProductCatalog() {
     { revalidateOnFocus: false },
   )
 
-  const { data: costItems } = useSWR<CostItem[]>(COSTS_ENDPOINT, fetchCosts, {
-    revalidateOnFocus: false,
-  })
-
-  // El precio de venta se recalcula en el frontend sumando los CostItem que
-  // aplican por tipo (igual que el listado de la app principal). Mientras los
-  // costos no estén disponibles, se usa el producto tal cual llega del backend.
-  const products = useMemo(() => {
-    const list = data ?? []
-    if (!costItems || costItems.length === 0) return list
-    return list.map((p) => recalculateProduct(p, costItems))
-  }, [data, costItems])
+  // Los precios llegan ya calculados por el backend (suma de costos aplicables
+  // incluida) y redondeados al centenar en `fetchProducts`.
+  const products = useMemo(() => data ?? [], [data])
 
   const inStock = useMemo(
     () => products.filter((p) => p.stock > 0),
@@ -48,7 +37,7 @@ export function ProductCatalog() {
       ? inStock.filter(
           (p) =>
             p.nombre.toLowerCase().includes(q) ||
-            p.tipo.toLowerCase().includes(q),
+            (p.tipoNombre ?? "").toLowerCase().includes(q),
         )
       : inStock
     return [...list].sort((a, b) => a.nombre.localeCompare(b.nombre, "es"))
