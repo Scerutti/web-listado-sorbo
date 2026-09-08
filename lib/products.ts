@@ -62,3 +62,20 @@ const currency = new Intl.NumberFormat("es-AR", {
 export function formatPrice(value: number): string {
   return currency.format(Math.round(value))
 }
+
+/** Unidades totales del pedido para acceder al precio mayorista. */
+export const WHOLESALE_MIN_UNITS = 10
+
+/**
+ * Indica si el pedido llega al mínimo mayorista.
+ *
+ * Se evalúa sobre el **total de unidades del carrito**, sin importar cómo se
+ * reparten entre productos: 10 unidades de un blend, 10 blends distintos de 1
+ * unidad, o 5 + 5 de dos blends califican todos igual.
+ *
+ * Al ser una regla del pedido y no de cada línea, el carrito se cobra entero a
+ * un solo precio: o todo mayorista o todo minorista, nunca mezclado.
+ */
+export function qualifiesForWholesale(totalUnits: number): boolean {
+  return totalUnits >= WHOLESALE_MIN_UNITS
+}

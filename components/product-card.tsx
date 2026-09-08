@@ -3,7 +3,11 @@
 import { Leaf, Minus, Plus, ShoppingCart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useCart } from "@/components/cart-provider"
-import { formatPrice, type Product } from "@/lib/products"
+import {
+  formatPrice,
+  WHOLESALE_MIN_UNITS,
+  type Product,
+} from "@/lib/products"
 
 export function ProductCard({ product }: { product: Product }) {
   const { add, increment, decrement, quantityOf, wholesale } = useCart()
@@ -59,7 +63,9 @@ export function ProductCard({ product }: { product: Product }) {
             </span>
           </div>
           <div className="mt-1 flex items-baseline justify-between gap-2">
-            <span className="text-xs text-muted-foreground">Mayorista</span>
+            <span className="text-xs text-muted-foreground">
+              Mayorista (desde {WHOLESALE_MIN_UNITS} u.)
+            </span>
             <span
               className={
                 wholesale

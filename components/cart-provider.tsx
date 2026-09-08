@@ -7,7 +7,11 @@ import {
   useState,
   type ReactNode,
 } from "react"
-import type { Product } from "@/lib/products"
+import {
+  qualifiesForWholesale,
+  WHOLESALE_MIN_UNITS,
+  type Product,
+} from "@/lib/products"
 
 export interface CartItem {
   product: Product
@@ -21,6 +25,12 @@ interface CartContextValue {
   totalItems: number
   totalPrice: number
   unitPrice: (product: Product) => number
+  /** `true` si el pedido se está cobrando mayorista (toggle activo Y mínimo alcanzado). */
+  wholesalePricing: boolean
+  /** Unidades que faltan para el mínimo mayorista. `0` si ya califica o si el toggle es minorista. */
+  unitsMissingForWholesale: number
+  /** `false` mientras el pedido no se pueda enviar (carrito vacío o mínimo sin alcanzar). */
+  canCheckout: boolean
   quantityOf: (id: string) => number
   add: (product: Product) => void
   increment: (id: string) => void
@@ -34,12 +44,6 @@ const CartContext = createContext<CartContextValue | null>(null)
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([])
   const [wholesale, setWholesale] = useState(false)
-
-  const unitPrice = useMemo(
-    () => (product: Product) =>
-      wholesale ? product.precioVentaMayorista : product.precioVenta,
-    [wholesale],
-  )
 
   const add = (product: Product) => {
     setItems((prev) => {
@@ -88,10 +92,26 @@ export function CartProvider({ children }: { children: ReactNode }) {
     [items],
   )
 
+  // El mínimo mayorista es del pedido entero, así que depende de totalItems y
+  // se resuelve una sola vez para todo el carrito.
+  const wholesalePricing = wholesale && qualifiesForWholesale(totalItems)
+
+  const unitPrice = useMemo(
+    () => (product: Product) =>
+      wholesalePricing ? product.precioVentaMayorista : product.precioVenta,
+    [wholesalePricing],
+  )
+
   const totalPrice = useMemo(
     () => items.reduce((sum, i) => sum + unitPrice(i.product) * i.quantity, 0),
     [items, unitPrice],
   )
+
+  // En minorista no hay mínimo que cumplir.
+  const unitsMissingForWholesale =
+    wholesale && !wholesalePricing ? WHOLESALE_MIN_UNITS - totalItems : 0
+
+  const canCheckout = items.length > 0 && unitsMissingForWholesale === 0
 
   const quantityOf = (id: string) =>
     items.find((i) => i.product.id === id)?.quantity ?? 0
@@ -103,6 +123,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     totalItems,
     totalPrice,
     unitPrice,
+    wholesalePricing,
+    unitsMissingForWholesale,
+    canCheckout,
     quantityOf,
     add,
     increment,

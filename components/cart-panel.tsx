@@ -2,7 +2,7 @@
 
 import { useEffect } from "react"
 import {
-  ArrowRight,
+  MessageCircle,
   Minus,
   Plus,
   ShoppingCart,
@@ -11,9 +11,8 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useCart } from "@/components/cart-provider"
-import { formatPrice } from "@/lib/products"
-
-const INSTAGRAM_DM_URL = "https://ig.me/m/sorbo.sabores"
+import { formatPrice, WHOLESALE_MIN_UNITS } from "@/lib/products"
+import { buildOrderMessage, buildWhatsAppOrderUrl } from "@/lib/whatsapp"
 
 export function CartPanel({
   open,
@@ -31,7 +30,9 @@ export function CartPanel({
     unitPrice,
     totalItems,
     totalPrice,
-    wholesale,
+    wholesalePricing,
+    unitsMissingForWholesale,
+    canCheckout,
   } = useCart()
 
   useEffect(() => {
@@ -48,7 +49,21 @@ export function CartPanel({
   }, [open, onClose])
 
   const handleContinue = () => {
-    window.open(INSTAGRAM_DM_URL, "_blank", "noopener,noreferrer")
+    if (!canCheckout) return
+    const message = buildOrderMessage(
+      items.map(({ product, quantity }) => ({
+        nombre: product.nombre,
+        quantity,
+        subtotal: unitPrice(product) * quantity,
+      })),
+      totalPrice,
+      wholesalePricing,
+    )
+    window.open(
+      buildWhatsAppOrderUrl(message),
+      "_blank",
+      "noopener,noreferrer",
+    )
     clear()
     onClose()
   }
@@ -172,7 +187,7 @@ export function CartPanel({
             <footer className="border-t border-border px-4 py-4">
               <div className="mb-1 flex items-center justify-between text-sm text-muted-foreground">
                 <span>Precios</span>
-                <span>{wholesale ? "Mayorista" : "Minorista"}</span>
+                <span>{wholesalePricing ? "Mayorista" : "Minorista"}</span>
               </div>
               <div className="mb-4 flex items-baseline justify-between">
                 <span className="font-medium">Total</span>
@@ -180,12 +195,36 @@ export function CartPanel({
                   {formatPrice(totalPrice)}
                 </span>
               </div>
+              {unitsMissingForWholesale > 0 && (
+                <div
+                  id="wholesale-min-note"
+                  className="mb-3 rounded-lg border border-border bg-secondary/60 p-3 text-sm"
+                >
+                  <p>
+                    El precio mayorista arranca en {WHOLESALE_MIN_UNITS} u. por
+                    pedido, sumando todos los blends.
+                  </p>
+                  <p className="mt-1 font-medium">
+                    Te{" "}
+                    {unitsMissingForWholesale === 1
+                      ? "falta 1 unidad"
+                      : `faltan ${unitsMissingForWholesale} unidades`}{" "}
+                    ({totalItems}/{WHOLESALE_MIN_UNITS}).
+                  </p>
+                </div>
+              )}
               <Button
                 onClick={handleContinue}
+                disabled={!canCheckout}
+                aria-describedby={
+                  unitsMissingForWholesale > 0
+                    ? "wholesale-min-note"
+                    : undefined
+                }
                 className="h-11 w-full text-base"
               >
-                Finalizar pedido por Instagram
-                <ArrowRight className="size-4" aria-hidden="true" />
+                Finalizar mi pedido por WhatsApp
+                <MessageCircle className="size-4" aria-hidden="true" />
               </Button>
               <button
                 type="button"
